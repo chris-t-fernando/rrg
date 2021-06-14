@@ -52,12 +52,18 @@ def validateDate(theDate):
         return False
 
 
+def getSectors():
+    pass
+
+def getTickersInSectors():
+    pass
+
+
 # returns a list of SECTOR quotes (not individual ticker quotes)
 # allSectors is the sectors data structure created above
 # searchSectors is a List of the sectors to be queried.  An empty List means all tickers
 # startDate and endDate are yyyy-mm-dd formatted dates
 # returns a List of positions
-
 def getSectorQuotesBetweenDates(allSectors, searchSectors, strStartDate, strEndDate):
     startDate = validateDate(strStartDate)
     endDate = validateDate(strEndDate)
