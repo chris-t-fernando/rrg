@@ -1,17 +1,26 @@
 from typing import Optional, List
 from pydantic import BaseModel
 import logging, sys
+from sectorQuote import sectorQuote
+from pprint import pprint
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-class sectorList:
-    someVar = 'something'
-
 class sectorTicker(BaseModel):
-    something: int
-    something = 2
+    sectorTickerCode: str
+    quotes: dict
+    tickers: list
+    
+    quotes = {}
+    tickers = []
+
+    def addTicker(self, theTicker: str):
+        self.tickers.append(theTicker)
+
+    def addQuote(self, date, open, high, low, offer, close, volume):
+        self.quotes[date] = sectorQuote(self.sectorTickerCode, date, open, high, low, offer, close, volume)
 
 class sectorFilter(BaseModel):
-    sectorTicker: int
+    sectorTicker: List
     
 class sectorStorage:
     def get_sectors(self, filters: sectorFilter) -> List[sectorTicker]: ...

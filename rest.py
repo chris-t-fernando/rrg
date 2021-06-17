@@ -8,14 +8,11 @@ logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 app = FastAPI()
 
 def restGetSectors() -> services.useCaseGetSectors:
-    services.useCaseGetSectors(adapters.CSVStorage())
     return services.useCaseGetSectors(adapters.CSVStorage())
 
 @app.post('/sectors', response_model=List[services.sectorTicker])
-async def sectors(filters: services.sectorFilter = Body(...), use_case=Depends(restGetSectors)):
-    logging.debug(filters)
+async def sectors(filters: services.sectorFilter, use_case=Depends(restGetSectors)):
     return use_case.getSectors(filters)
-
 
 """
 -offers functions called getSectors, getAllTickersInSector, getTickersSector, getSectorQuotesBetweenDates, getSectorQuotesOnDate

@@ -14,8 +14,8 @@ params= {
 }
 
 params= {
-    'sectorTicker': 100
+    'sectorTicker': [ 'xmj', 'xej' ]
 }
 
-r= requests.post ('http://127.0.0.1:8000/sectors', json=params)
+r= requests.post ('http://127.0.0.1:8001/sectors', json=params)
 print (r.json ())
