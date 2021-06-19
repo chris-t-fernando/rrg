@@ -56,7 +56,7 @@ class sectorUseCases():
             return False
 
 
-    def getSectors(self):
+    def getSectorList(self):
         return self._sectors.keys()
 
     # parameter is a single sector

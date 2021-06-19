@@ -4,6 +4,11 @@ from pprint import pprint
 
 class adapterRDS():
     def __init(self):
+# class needs to extend services 
+# needs to load all the data in
+
+
+
         appLayer = sectorUseCases()
 
         searchTickers = [ 'xej', 'xmj' ]
