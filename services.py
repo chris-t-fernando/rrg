@@ -32,19 +32,23 @@ class sectorTicker(BaseModel):
 
 # this is a duplication of tickerQuote - not sure which one I want to use right now though
 class ticker(BaseModel):
-    sectorTickerCode: str
+    tickerCode: str
+    sectorCode: str
     quotes: dict
     
     quotes = {}
 
     def addQuote(self, date, open, high, low, offer, close, volume):
-        self.quotes[date] = tickerQuote(self.sectorTickerCode, date, open, high, low, offer, close, volume)
+        self.quotes[date] = tickerQuote(self.tickerCode, date, open, high, low, offer, close, volume, self.sectorCode)
     
     def getQuoteList(self):
         returnDates = []
         for date in self.quotes:
             returnDates.append(date)
         return returnDates
+    
+    def getSector(self):
+        return self.sectorCode
 
 
 class sectorFilter(BaseModel):
