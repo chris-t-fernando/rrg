@@ -17,7 +17,7 @@ app = FastAPI()
 # 6. quotes/weekly - a list of the organisation/search options - by ticker or by date
 # 7. quotes/weekly/tickers/ - a list of the tickers we have weekly quotes for
 # 8. quotes/weekly/tickers/{ticker} - the weekly quotes we have for this ticker
-# 9. quotes/weekly/dates/ - a list of the dates we have quotes for that belong to this 
+# 9. quotes/weekly/dates/ - a list of the dates we have quotes for
 # 10. quotes/weekly/dates/{date} - a list of the the quotes we have for this date
 
 # IMPLEMENTATION
@@ -127,14 +127,14 @@ async def sectors(use_case=Depends(restGetTickers), ticker: str = Path(..., titl
     return use_case.getTickers(filter)
 
 
-# 9. quotes/weekly/dates/ - a list of the dates we have quotes for that belong to this
+# 9. quotes/weekly/dates/ - a list of the dates we have quotes for
 # todo: replace weekly with {interval}
 def restGetTickers() -> services.useCaseGetTickers:
     storage = adapters.CSVStorage()
     storage.tickerRead()
     return services.useCaseGetTickers(storage)
 
-@app.get('/quotes/weekly/tickers', response_model=Dict)
+@app.get('/quotes/weekly/dates', response_model=Dict)
 async def sectors(filters: services.tickerFilter, use_case=Depends(restGetTickers)):
     # override/set quote type filter to weekly, since this is the rest document called
     filters.setQuoteTypeFilter('weekly')
