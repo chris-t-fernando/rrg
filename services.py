@@ -6,7 +6,7 @@ from tickerQuote import tickerQuote
 from pprint import pprint
 logging.basicConfig(stream=sys.stderr, level=logging.DEBUG)
 
-# this is a duplication of sectorQuote - not sure which one I want to use right now though
+# todo: this is a duplication of sectorQuote - I should merge the two to collapse/simplify
 class sectorTicker(BaseModel):
     sectorTickerCode: str
     quotes: dict
@@ -30,7 +30,7 @@ class sectorTicker(BaseModel):
             returnDates.append(date)
         return returnDates
 
-# this is a duplication of tickerQuote - not sure which one I want to use right now though
+# todo: this is a duplication of tickerQuote - I should merge the two to collapse/simplify
 class ticker(BaseModel):
     tickerCode: str
     sectorCode: str
@@ -56,6 +56,13 @@ class sectorFilter(BaseModel):
 
 class tickerFilter(BaseModel):
     tickers: List
+    quoteType: Optional[List] = None
+
+    def setQuoteTypeFilter(self, newQuoteList):
+        self.quoteType = newQuoteList
+    
+    def setQuoteTickerFilter(self, newTickerFilter):
+        self.tickers = newTickerFilter
 
 class sectorStorage:
     def get_sectors(self, filters: sectorFilter) -> List[sectorTicker]: ...
@@ -63,21 +70,24 @@ class sectorStorage:
 class tickerStorage:
     def get_tickers(self, filters: tickerFilter) -> List[ticker]: ...
 
+class tickerWeeklyStorage:
+    def get_weekly_tickers(self, filters: tickerFilter) -> List[ticker]: ...
 
+# gets sectors from storage
 class useCaseGetSectors():
     def __init__(self, source: sectorStorage):
         self.source = source
     
     def getSectors(self, filters: sectorFilter) -> List[sectorTicker]:
-        #sectors = self.source.get_sectors(filters=filters)
-        #return sectors
         return self.source.get_sectors(filters=filters)
 
+# gets individual company tickers from storage
 class useCaseGetTickers():
     def __init__(self, source: tickerStorage):
         self.source = source
     
     def getTickers(self, filters: tickerFilter) -> List[ticker]:
-        #sectors = self.source.get_tickers(filters=filters)
-        #return sectors
         return self.source.get_tickers(filters=filters)
+
+    def getWeeklyTickers(self, filters: tickerFilter) -> List[ticker]:
+        return self.source.get_weekly_tickers(filters=filters)

@@ -10,32 +10,37 @@ class CSVStorage(i.sectorStorage):
     def __init__(self):
         pass
 
+    # used for setting up _storage for searching by a SECTOR ticker (as opposed to searching by company)
+    # reads CSV contents and populates it into the _storage variable
+    # the _storage variable is set up like this:
+    # _storage[someSectorTicker] which is a sectorTicker object defined in services.py
+    # then historical quotes are populated by calling .addQuote against each sectorTicker object, which in turn
+    # just adds them to the quote Dict in that object
     def sectorRead(self):
         # read from CSV
         self._storage: Dict[i.sectorTicker] = {}
         tickerCount = 0
 
-        # populate sectors, which is a Dict (key sector ticker) containing
-        # ['tickers'], which is a List of tickers belonging to this sector
-        # ['quotes'], which is a Dict of historical quotes for this ticker
-        # start with creating the object and populating ['tickers']
+        # read the CSV
         with open('sector-ticker-map.csv', newline='') as csvfile:
             mapReader = csv.DictReader(csvfile, delimiter=',')
 
             for row in mapReader:
-                # if the sector key doesn't exist, create it
+                # if the sector key hasn't been instantiated, create it
                 sector = row['sector'].lower()
                 if sector not in self._storage:
                     self._storage[sector] = i.sectorTicker(sectorTickerCode=sector)
                 
+                # add the tickers that belong to this sector
                 ticker = row['ticker'].lower()
-
+                # adds the ticker to the ticker List variable inside this sectorTicker object
                 self._storage[sector].addTicker(ticker)
                 tickerCount += 1
 
         logging.debug('Finished loading sector:ticker map. Total sectors is ' +  str(len(self._storage)) + ', total tickers is ' + str(tickerCount))
 
-        # now populate the historical quotes
+        # now populate the historical quotes against each of those sectors
+        # populates the quotes Dict in each sectorTicker object
         with open('sectors.csv', newline='') as csvfile:
             tickerReader = csv.DictReader(csvfile, delimiter=',')
             quoteCount = 0
@@ -76,15 +81,17 @@ class CSVStorage(i.sectorStorage):
         #logging.debug(result)
         return result
 
+    # used for setting up _storage for searches by an individual company's stock's ticker as opposed to search by sector
+    # reads CSV contents and populates it into the _storage variable
+    # the _storage variable is set up like this:
+    # _storage[aStockTicker] which is a ticker object defined in services.py
+    # then historical quotes are populated by calling .addQuote against each ticker object, which in turn
+    # just adds them to the quote List in that object
     def tickerRead(self):
         # read from CSV
         self._storage: Dict[i.ticker] = {}
         sectors = {}
 
-        # data model is different here - ticker is the key, not the sector
-        # return a dict like this
-        # [ticker][sector] = some sector
-        # [ticker][quotes] = []
         with open('sector-ticker-map.csv', newline='') as csvfile:
             mapReader = csv.DictReader(csvfile, delimiter=',')
 
@@ -103,7 +110,8 @@ class CSVStorage(i.sectorStorage):
 
         # now populate the historical quotes
         # I don't have this data yet...
-        #self._storage[row['sectorticker']].addQuote(row['date'], row['open'], row['high'], row['low'], 0, row['close'], row['volume'])
+        # for later
+        # self._storage[row['sectorticker']].addQuote(row['date'], row['open'], row['high'], row['low'], 0, row['close'], row['volume'])
 
 
     # the filtering happens in adapters but I don't know if I agree with this?  Shouldn't it be done in services?
@@ -114,16 +122,22 @@ class CSVStorage(i.sectorStorage):
     #  -quote dates
     def get_tickers(self, filters: i.tickerFilter) -> List[i.ticker]:
         result = {}
-
         # loop through the tickers in our storage structure
         for allTicker in self._storage:
             # loop through the filters
-            for searchTickerList in filters:
-                for searchTicker in searchTickerList[1]:
-                    if ( searchTicker == allTicker ) or ( searchTicker == "*" ):
-                        result[allTicker] = {}
-                        result[allTicker]['sector'] = self._storage[allTicker].getSector()
-                        result[allTicker]['quotes'] = self._storage[allTicker].getQuoteList()
+            for searchTickerList in filters.tickers:
+                if ( searchTickerList == allTicker ) or ( searchTickerList == "*" ):
+                    result[allTicker] = {}
+                    result[allTicker]['sector'] = self._storage[allTicker].getSector()
+                    # call getQuoteList with a filter on it
+                    result[allTicker]['quotes'] = self._storage[allTicker].getQuoteList()
+
+                #for searchTicker in searchTickerList: 
+                #    if ( searchTicker == allTicker ) or ( searchTicker == "*" ):
+                #        result[allTicker] = {}
+                #        result[allTicker]['sector'] = self._storage[allTicker].getSector()
+                #        # call getQuoteList with a filter on it
+                #        result[allTicker]['quotes'] = self._storage[allTicker].getQuoteList()
         #logging.debug(result)
         
         return result
