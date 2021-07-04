@@ -12,8 +12,8 @@ logging.getLogger('sqlalchemy.orm').setLevel(logging.INFO)
 # handler for pulling config from SSM
 def getSSMParameter(ssm, parameterPath, encryptionOption=False):
     return ssm.get_parameter(Name=parameterPath, WithDecryption=encryptionOption).get('Parameter').get('Value')
-# FIX THIS - dunno why proxies are messing this up, but getting SSL errors 4/07/21
-ssmClient = boto3.client('ssm', verify=False)
+
+ssmClient = boto3.client('ssm')
 
 host = getSSMParameter(ssmClient, '/rrg-creator/rds-endpoint')
 user = getSSMParameter(ssmClient, '/rrg-creator/rds-user')
