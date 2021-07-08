@@ -252,3 +252,165 @@ def show_records(
             )
             .all()
         )
+
+
+# Sector USE CASE 1
+# list Sectors in database
+# takes optional filter as a request query: 'sector_codes' which list of sector codes
+@app.get("/sector/", response_model=List[entity_schemas.Sector])
+def show_records(
+    filters: Optional[usecase_rules.sector_filter] = None, db: Session = Depends(get_db)
+):
+    if filters == None:
+        # catches no get query
+        return db.query(adapter_models.Sector).all()
+    elif filters.sector_code == None:
+        raise HTTPException(
+            status_code=400,
+            detail="Bad request. Acceptable Query parameter is 'sector_code'",
+        )
+    else:
+        return (
+            db.query(adapter_models.Sector)
+            .filter(adapter_models.Sector.sector_code.in_(filters.sector_code))
+            .all()
+        )
+
+
+# STOCK USE CASE 2
+# gets a specific sector code
+# does not accept request queries
+@app.get("/sector/{search_sector}", response_model=List[entity_schemas.Sector])
+def show_records(search_sector: str, db: Session = Depends(get_db)):
+    return (
+        db.query(adapter_models.Sector)
+        .filter(adapter_models.Sector.sector_code == search_sector)
+        .all()
+    )
+
+
+# STOCK USE CASE 3
+# gets a list of the weekly quotes for a specific sector code {search_sector}
+@app.get(
+    "/sector/{search_sector}/quotes/weekly",
+    response_model=List[entity_schemas.Weekly_Sector_Quotes],
+)
+def show_records(
+    search_sector: str,
+    filters: Optional[usecase_rules.date_filter] = None,
+    db: Session = Depends(get_db),
+):
+    if filters == None:
+        # catches no get query
+        return (
+            db.query(adapter_models.Weekly_Sector_Quotes)
+            .filter(adapter_models.Weekly_Sector_Quotes.sector_code == search_sector)
+            .all()
+        )
+    else:
+        filters.processSearchDates()
+        if filters.start == None or filters.end == None:
+            # they sent something weird and the constructor wasn't able to translate it into something usable
+            raise HTTPException(
+                status_code=400,
+                detail="Bad request. Acceptable Query parameters are 'start_date' and/or 'end_date', or 'period'",
+            )
+        else:
+            # they've set filters
+            return (
+                db.query(adapter_models.Weekly_Sector_Quotes)
+                .filter(adapter_models.Weekly_Sector_Quotes.sector_code == search_sector)
+                .filter(
+                    adapter_models.Weekly_Sector_Quotes.quote_date >= filters.start,
+                    adapter_models.Weekly_Sector_Quotes.quote_date < filters.end,
+                )
+                .all()
+            )
+
+
+# STOCK USE CASE 4
+# gets a specific quote (specific sector, specific date)
+# does not accept request queries
+@app.get(
+    "/sector/{search_sector}/quotes/weekly/{search_date}",
+    response_model=List[entity_schemas.Weekly_Sector_Quotes],
+)
+def show_records(search_sector: str, search_date: str, db: Session = Depends(get_db)):
+
+    return (
+        db.query(adapter_models.Weekly_Sector_Quotes)
+        .filter(adapter_models.Weekly_Sector_Quotes.sector_code == search_sector)
+        .filter(adapter_models.Weekly_Sector_Quotes.quote_date == search_date)
+        .all()
+    )
+
+
+# STOCK USE CASE 5
+# gets all of the dates we have weekly quotes for
+# takes optional filter as a request query: 'sector_codes' which list of sector codes
+@app.get("/quote/sector/weekly", response_model=List)
+def show_records(
+    filters: Optional[usecase_rules.sector_filter] = None, db: Session = Depends(get_db)
+):
+    if filters == None:
+        # catches no get query
+        # can't just return .distinct.all() because that would be a dict with quote_date as key and the date as val
+        # whereas what we really want here is a flat list of dates
+        returnList = []
+        records = (
+            db.query(adapter_models.Weekly_Sector_Quotes.quote_date).distinct().all()
+        )
+        [returnList.append(u.quote_date) for u in records]
+        return returnList
+    elif filters.sector_code == None:
+        raise HTTPException(
+            status_code=400,
+            detail="Bad request. Acceptable Query parameter is 'sector_code'",
+        )
+    else:
+        returnList = []
+        records = (
+            db.query(adapter_models.Weekly_Sector_Quotes.quote_date)
+            .filter(
+                adapter_models.Weekly_Sector_Quotes.sector_code.in_(filters.sector_code)
+            )
+            .distinct()
+            .all()
+        )
+        [returnList.append(u.quote_date) for u in records]
+        return returnList
+
+
+# STOCK USE CASE 6
+# gets the quotes for all (or filtered list of) sector codes
+# takes optional filter as a request query: 'sector_codes' which list of sector codes
+# todo: accept sector as a filter
+@app.get(
+    "/quote/sector/weekly/{search_date}",
+    response_model=List[entity_schemas.Weekly_Sector_Quotes],
+)
+def show_records(
+    search_date: str,
+    db: Session = Depends(get_db),
+    filters: Optional[usecase_rules.sector_filter] = None,
+):
+    if filters == None:
+        return (
+            db.query(adapter_models.Weekly_Sector_Quotes)
+            .filter(adapter_models.Weekly_Sector_Quotes.quote_date == search_date)
+            .all()
+        )
+    elif filters.sector_code == None:
+        raise HTTPException(
+            status_code=400,
+            detail="Bad request. Acceptable Query parameter is 'sector_code'",
+        )
+    else:
+        return (
+            db.query(adapter_models.Weekly_Sector_Quotes)
+            .filter(adapter_models.Weekly_Sector_Quotes.quote_date == search_date)
+            .filter(
+                adapter_models.Weekly_Sector_Quotes.sector_code.in_(filters.sector_code)
+            )
+            .all()
+        )

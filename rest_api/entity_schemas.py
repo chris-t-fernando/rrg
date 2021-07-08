@@ -41,8 +41,8 @@ class Weekly_Sector_Quotes(BaseModel):
     class Config:
         orm_mode = True
 
-class Weekly_Stock_Quotes_List(BaseModel):
-    quote_date: date
-    
-    class Config:
-        orm_mode = True
+#class Weekly_Stock_Quotes_List(BaseModel):
+#    quote_date: date
+#    
+#    class Config:
+#        orm_mode = True

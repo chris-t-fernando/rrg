@@ -6,6 +6,9 @@ from dateutil.relativedelta import relativedelta
 class stock_filter(BaseModel):
     stock_code: Optional[List] = None
 
+class sector_filter(BaseModel):
+    sector_code: Optional[List] = None
+
 class date_filter(BaseModel):
     # inputs
     start_date: Optional[str] = None

@@ -105,7 +105,7 @@ def useCaseSix(dot, params=None):
 
 # useCaseOne()
 # useCaseTwo()
-useCaseThree()
+# useCaseThree()
 # useCaseFour('1', params = {
 #        'start_date': '2021-01-01'
 #    }
@@ -149,3 +149,112 @@ useCaseThree()
 
 # useCaseSix("1")
 # useCaseSix("2", params={"stock_code": ["bhp"]})
+
+
+# SECTOR TESTS
+# use case 1
+def sectorUseCaseOne():
+    useCase = "one"
+    startBanner(useCase)
+
+    params = {"sector_code": ["xmj", "xij"]}
+
+    r = requests.get("http://127.0.0.1:8001/sector", json=params)
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+# use case 2
+def sectorUseCaseTwo():
+    useCase = "two"
+    startBanner(useCase)
+
+    r = requests.get("http://127.0.0.1:8001/sector/xmj")
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+# use case 3
+def sectorUseCaseThree():
+    useCase = "three"
+    startBanner(useCase)
+
+    r = requests.get("http://127.0.0.1:8001/sector/xmj/quotes/weekly")
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+# use case 4
+def sectorUseCaseFour(dot, params=None):
+    useCase = "Four" + dot
+    startBanner(useCase)
+
+    if params == None:
+        r = requests.get("http://127.0.0.1:8001/sector/xmj/quotes/weekly")
+    else:
+        r = requests.get("http://127.0.0.1:8001/sector/xmj/quotes/weekly", json=params)
+
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+# use case 5
+def sectorUseCaseFive(dot, params=None):
+    useCase = "Five" + dot
+    startBanner(useCase)
+
+    if params == None:
+        r = requests.get("http://127.0.0.1:8001/quote/sector/weekly")
+    else:
+        r = requests.get("http://127.0.0.1:8001/quote/sector/weekly", json=params)
+
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+# use case 6
+def sectorUseCaseSix(dot, params=None):
+    useCase = "Six" + dot
+    startBanner(useCase)
+
+    if params == None:
+        r = requests.get("http://127.0.0.1:8001/quote/sector/weekly/2021-03-14")
+    else:
+        r = requests.get(
+            "http://127.0.0.1:8001/quote/sector/weekly/2021-03-14", json=params
+        )
+
+    rjson = r.json()
+    print(json.dumps(rjson, sort_keys=False, indent=4))
+
+    endBanner(useCase)
+
+
+sectorUseCaseOne()
+sectorUseCaseTwo()
+sectorUseCaseThree()
+sectorUseCaseFour("4", params={"period": "100d"})
+
+sectorUseCaseFour("5", params={"period": "10w"})
+
+sectorUseCaseFour("6", params={"period": "2m"})
+
+sectorUseCaseFour("7", params={"period": "1y"})
+
+sectorUseCaseFour("8", params=None)
+
+sectorUseCaseFive("1", params=None)
+sectorUseCaseFive("2", params={"sector_code": ["xmj", "xij"]})
+
+sectorUseCaseSix("1")
+sectorUseCaseSix("2", params={"sector_code": ["xmj"]})
