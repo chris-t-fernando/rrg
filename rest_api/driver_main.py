@@ -60,7 +60,7 @@ def main():
     return ["stock", "sector"]
 
 
-# SECTOR QUOTE LITERAL RETURNS
+# STOCK QUOTE LITERAL RETURNS
 @app.get("/quote/stock", response_model=List[str])
 def main():
     return ["intraday", "daily", "weekly"]
@@ -76,7 +76,7 @@ def main():
     return "Not implemented"
 
 
-# STOCK QUOTE LITERAL RETURNS
+# SECTOR QUOTE LITERAL RETURNS
 @app.get("/quote/sector", response_model=List[str])
 def main():
     return ["intraday", "daily", "weekly"]
@@ -108,11 +108,18 @@ def show_records(
             detail="Bad request. Acceptable Query parameter is 'stock_code'",
         )
     else:
-        return (
+        records = (
             db.query(adapter_models.Stock)
             .filter(adapter_models.Stock.stock_code.in_(filters.stock_code))
             .all()
         )
+        if len(records) > 0:
+            return records
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="Specified stock_code was not found",
+            )
 
 
 # STOCK USE CASE 2
@@ -120,11 +127,18 @@ def show_records(
 # does not accept request queries
 @app.get("/stock/{search_stock}", response_model=List[entity_schemas.Stock])
 def show_records(search_stock: str, db: Session = Depends(get_db)):
-    return (
+    records = (
         db.query(adapter_models.Stock)
         .filter(adapter_models.Stock.stock_code == search_stock)
         .all()
     )
+    if len(records) > 0:
+        return records
+    else:
+        raise HTTPException(
+            status_code=404,
+            detail="Specified stock_code was not found",
+        )
 
 
 # STOCK USE CASE 3
@@ -140,13 +154,25 @@ def show_records(
 ):
     if filters == None:
         # catches no get query
-        return (
+        results = (
             db.query(adapter_models.Weekly_Stock_Quotes)
             .filter(adapter_models.Weekly_Stock_Quotes.stock_code == search_stock)
             .all()
         )
+        if len(results) > 0:
+            return results
+        else:
+            raise HTTPException(
+                status_code=404,
+                detail="No results found",
+            )
     else:
-        filters.processSearchDates()
+        processSearchDates = filters.processSearchDates()
+        if processSearchDates["process_result"] == False:
+            raise HTTPException(
+                status_code=400,
+                detail="Bad request. " + processSearchDates["error_message"],
+            )
         if filters.start == None or filters.end == None:
             # they sent something weird and the constructor wasn't able to translate it into something usable
             raise HTTPException(
@@ -155,7 +181,7 @@ def show_records(
             )
         else:
             # they've set filters
-            return (
+            results = (
                 db.query(adapter_models.Weekly_Stock_Quotes)
                 .filter(adapter_models.Weekly_Stock_Quotes.stock_code == search_stock)
                 .filter(
@@ -164,6 +190,13 @@ def show_records(
                 )
                 .all()
             )
+            if len(results) > 0:
+                return results
+            else:
+                raise HTTPException(
+                    status_code=404,
+                    detail="Specified results not found",
+                )
 
 
 # STOCK USE CASE 4
@@ -319,7 +352,9 @@ def show_records(
             # they've set filters
             return (
                 db.query(adapter_models.Weekly_Sector_Quotes)
-                .filter(adapter_models.Weekly_Sector_Quotes.sector_code == search_sector)
+                .filter(
+                    adapter_models.Weekly_Sector_Quotes.sector_code == search_sector
+                )
                 .filter(
                     adapter_models.Weekly_Sector_Quotes.quote_date >= filters.start,
                     adapter_models.Weekly_Sector_Quotes.quote_date < filters.end,
