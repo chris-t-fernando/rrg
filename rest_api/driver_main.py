@@ -1,6 +1,6 @@
 from typing import List, Optional
 from datetime import date
-from fastapi import Depends, FastAPI, HTTPException, Query
+from fastapi import Depends, FastAPI, HTTPException, Query, Body
 from fastapi.exception_handlers import (
     http_exception_handler,
     request_validation_exception_handler,
@@ -49,18 +49,17 @@ async def validation_exception_handler(request, exc):
     return await request_validation_exception_handler(request, exc)
 
 
-# hardcoded routes
 @app.get("/")
 def main():
     return RedirectResponse(url="/docs/")
 
 
+# STOCK QUOTE LITERAL RETURNS
 @app.get("/quote", response_model=List[str])
 def main():
     return ["stock", "sector"]
 
 
-# STOCK QUOTE LITERAL RETURNS
 @app.get("/quote/stock", response_model=List[str])
 def main():
     return ["intraday", "daily", "weekly"]
@@ -97,8 +96,10 @@ def main():
 # takes optional filter as a request query: 'stock_codes' which list of stock codes
 @app.get("/stock/", response_model=List[entity_schemas.Stock])
 def show_records(
-    filters: Optional[usecase_rules.stock_filter] = None, db: Session = Depends(get_db)
+    filters: Optional[usecase_rules.stock_filter] = None,
+    db: Session = Depends(get_db),
 ):
+    # validationResults = validateInputs(filters)
     if filters == None:
         # catches no get query
         return db.query(adapter_models.Stock).all()

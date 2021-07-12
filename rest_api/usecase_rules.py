@@ -1,11 +1,28 @@
 from typing import Optional, List
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError, root_validator
 from datetime import date, datetime
 from dateutil.relativedelta import relativedelta
 
 
 class stock_filter(BaseModel):
     stock_code: Optional[List] = None
+
+    @root_validator(pre=True)
+    def check_attributes(cls, values):
+        # optional, so none is okay
+        if values.get("stock_code") == None:
+            return values
+
+        assert len(values) == 1, "multiple attributes given, expecting just stock_code"
+        assert "stock_code" in values, "unknown attribute given in " + str(
+            values.keys()
+        )
+        for x in values.get("stock_code"):
+            assert len(x) < 3 or len(x), (
+                "stock_codes must be 3 or 4 characters long.  Failed on " + x
+            )
+
+        return values
 
 
 class sector_filter(BaseModel):
