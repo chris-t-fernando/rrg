@@ -316,6 +316,7 @@ def show_records(
                 detail="No results found",
             )
 
+
 #######################
 ###### SECTOR #########
 #######################
@@ -406,7 +407,9 @@ def show_records(
             # they've set filters
             results = (
                 db.query(adapter_models.Weekly_Sector_Quotes)
-                .filter(adapter_models.Weekly_Sector_Quotes.sector_code == search_sector)
+                .filter(
+                    adapter_models.Weekly_Sector_Quotes.sector_code == search_sector
+                )
                 .filter(
                     adapter_models.Weekly_Sector_Quotes.quote_date >= filters.start,
                     adapter_models.Weekly_Sector_Quotes.quote_date < filters.end,
