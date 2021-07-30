@@ -1,0 +1,71 @@
+---
+- name: Ensure Selenium is configured
+  hosts: 34.211.220.132
+  gather_facts: no
+
+  tasks:
+    # SET THE TIMEZONE
+    - name: ensure the timezone is Australia Melbourne
+      become: yes
+      timezone:
+        name: Australia/Melbourne
+    - name: ensure we have the latest Google signing key
+      shell: curl -sS -o - https://dl-ssl.google.com/linux/linux_signing_key.pub | apt-key add
+      become: yes
+      register: key_return
+      changed_when: "'bananas' in key_return.stdout"
+    - name: ensure apt sources includes google
+      become: yes
+      copy:
+        dest: /etc/apt/sources.list.d/google-chrome.list
+        content: |
+          deb [arch=amd64]  http://dl.google.com/linux/chrome/deb/ stable main
+    # apt cache update and then get packages
+    - name: ensure Selenium packages are installed via apt
+      become: yes
+      apt:
+        name:
+          - unzip
+          - xvfb
+          - libxi6
+          - libgconf-2-4
+          - default-jdk
+          - python3
+          - pip
+          - git
+          - google-chrome-stable
+        state: present
+        update_cache: yes
+    - name: ensure we have chromedriver
+      shell: wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+      register: chrome_return
+      changed_when: "'bananas' in chrome_return.stdout"
+    - name: ensure chromedriver is unzipped
+      shell: unzip chromedriver_linux64.zip
+      register: unzip_return
+      changed_when: "'bananas' in unzip_return.stdout"
+    - name: ensure chromedriver is moved to /usr/bin/chromedriver
+      shell: mv chromedriver /usr/bin/chromedriver
+      become: yes
+      register: movechrome_return
+      changed_when: "'bananas' in movechrome_return.stdout"
+    - name: ensure root owns chromedriver
+      become: yes
+      ansible.builtin.file:
+        path: /usr/bin/chromedriver
+        state: file
+        owner: root
+        group: root
+        mode: u+rwx,g+rwxs,o+r-wx
+    - name: ensure selenium jar is present
+      shell: wget https://selenium-release.storage.googleapis.com/3.13/selenium-server-standalone-3.13.0.jar
+      register: selenium_return
+      changed_when: "'bananas' in selenium_return.stdout"
+    - name: ensure testng jar is present
+      shell: wget http://www.java2s.com/Code/JarDownload/testng/testng-6.8.7.jar.zip
+      register: testng_return
+      changed_when: "'bananas' in testng_return.stdout"
+    - name: ensure testng is unzipped
+      shell: unzip testng-6.8.7.jar.zip
+      register: unziptestng_return
+      changed_when: "'bananas' in unziptestng_return.stdout"
