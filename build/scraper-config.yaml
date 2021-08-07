@@ -31,13 +31,21 @@
           - libgconf-2-4
           - default-jdk
           - python3
+          - awscli
           - pip
           - git
           - google-chrome-stable
         state: present
         update_cache: yes
+    - name: ensure aws is configured
+      become: yes
+      copy:
+        dest: /etc/apt/sources.list.d/google-chrome.list
+        content: |
+          [default]
+          region = us-west-2
     - name: ensure we have chromedriver
-      shell: wget https://chromedriver.storage.googleapis.com/2.41/chromedriver_linux64.zip
+      shell: wget https://chromedriver.storage.googleapis.com/92.0.4515.43/chromedriver_linux64.zip
       register: chrome_return
       changed_when: "'bananas' in chrome_return.stdout"
     - name: ensure chromedriver is unzipped
