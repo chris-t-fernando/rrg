@@ -1,4 +1,0 @@
-requests
-wheel
-pymysql
-boto3
