@@ -1,7 +1,9 @@
 from symbol import Symbol
 import pandas as pd
 import matplotlib.pyplot as plt
-import datetime
+from matplotlib.collections import LineCollection
+from colour import Color
+import numpy as np
 
 
 # expects
@@ -89,15 +91,30 @@ ax1 = plt.axes()
 # axis1.plot(combined.iloc[-15:-1].xhj_RS_RATIO, combined.iloc[-15:-1].xhj_RM, format="o")
 # plt.show()
 
-x = combined.iloc[-15:-1].xhj_RS_RATIO
-y = combined.iloc[-15:-1].xhj_RM
-labels = combined.index[-15:-1]
-ax1.plot(x, y, "C3", lw=3)
-ax1.scatter(x, y, s=120)
+tail_len = 15
+red = Color("maroon")
+blue = Color("gray")
+colours = list(red.range_to(blue, tail_len - 1))
+hex_colours = [str(x) for x in colours]
+
+x = combined.iloc[-tail_len:-1].xhj_RS_RATIO
+y = combined.iloc[-tail_len:-1].xhj_RM
+labels = combined.index[-tail_len:-1]
+
+# ax1.plot(x, y, "C3", c=hex_colours, lw=1)
+ax1.scatter(x, y, c=hex_colours, s=80)
 ax1.axvline(c="grey", lw=1, x=100)
 ax1.axhline(c="grey", lw=1, y=100)
-for i in range(1, 14):
-    # label = datetime.time(labels[i].date())
+
+points = np.array([x, y]).T.reshape(-1, 1, 2)
+segments = np.concatenate([points[:-1], points[1:]], axis=1)
+
+lc = LineCollection(segments, colors=hex_colours)
+lc.set_array(np.linspace(0, 1, len(x)))
+lc.set_linewidth(2)
+line = ax1.add_collection(lc)
+
+for i in range(0, tail_len - 1):
     label = str(labels[i].time())
 
     plt.annotate(
