@@ -5,6 +5,9 @@ from matplotlib.collections import LineCollection
 from colour import Color
 import numpy as np
 
+_ddof = 1
+_window = 50
+
 
 # expects
 def add_price_relative(df: pd.DataFrame, relative_to: str):
@@ -15,20 +18,29 @@ def add_price_relative(df: pd.DataFrame, relative_to: str):
     return df
 
 
+# The JdK RS ratio is then calculated as follows:100 + ((relative - rolling_mean) / rolling_std)
 def add_rs_ratio(df: pd.DataFrame, symbols: list[str]):
     for s in symbols:
         column_name = f"{s}_RS_RATIO"
         pr_col = f"{s}_PR"
-        df[column_name] = (
-            100
-            + (
-                (df[pr_col] - df[pr_col].rolling(window=12).mean())
-                / df[pr_col].rolling(window=12).std()
-            )
-            + 1
+        df[column_name] = 101 + (
+            (df[pr_col] - df[pr_col].rolling(window=_window).mean())
+            / df[pr_col].rolling(window=_window).std(ddof=_ddof)
         )
 
     return df
+
+
+def rs_ratio(prices_df, benchmark, window=10):
+    from numpy import mean, std
+
+    for series in prices_df:
+        rs = (prices_df[series].divide(benchmark)) * 100
+        rs_ratio = rs.rolling(window).mean()
+        rel_ratio = 100 + ((rs_ratio - rs_ratio.mean()) / rs_ratio.std() + 1)
+        prices_df[series] = rel_ratio
+    prices_df.dropna(axis=0, how="all", inplace=True)
+    return prices_df
 
 
 def add_roc(df: pd.DataFrame, symbols: list[str]):
@@ -40,37 +52,110 @@ def add_roc(df: pd.DataFrame, symbols: list[str]):
     return df
 
 
-"""
-101 + (
-ROC-AVERAGE(last 12 ROC)
-)
-/
-STDEV(last 12 ROC)
-"""
-
-
+# 100 + ((momentum - momentum_rolling_mean) / momentum_rolling_std)
 def add_rm(df: pd.DataFrame, symbols: list[str]):
     for s in symbols:
         column_name = f"{s}_RM"
         roc_col = f"{s}_ROC"
-        df[column_name] = (
-            100
-            + (
-                (df[roc_col] - df[roc_col].rolling(window=12).mean())
-                / df[roc_col].rolling(window=12).std()
-            )
-            + 1
+        df[column_name] = 100 + (
+            (df[roc_col] - df[roc_col].rolling(window=_window).mean())
+            / df[roc_col].rolling(window=_window).std(ddof=_ddof)
         )
     return df
 
 
-sp200 = Symbol(yf_symbol="^AXJO", interval="30m")
-xhj = Symbol(yf_symbol="^AXHJ", interval="30m")
-xij = Symbol(yf_symbol="^AXIJ", interval="30m")
-xre = Symbol(yf_symbol="^AXRE", interval="30m")
+def rs_ratio(prices_df, benchmark, window=10):
+    from numpy import mean, std
 
+    for series in prices_df:
+        rs = (prices_df[series].divide(benchmark)) * 100
+        rs_ratio = rs.rolling(window)
+        rel_ratio = 100 + ((rs - rs_ratio.mean()) / rs_ratio.std(ddof=0) + 1)
+        #                    100 + ((JDK_RS_momentum[ticker] - JDK_RS_momentum[ticker].rolling(10).mean())/JDK_RS_momentum[ticker].rolling(10).std() + 1)
+        prices_df[series] = rel_ratio
+    prices_df.dropna(axis=0, how="all", inplace=True)
+    return prices_df
+
+
+"""
+8   100.71
+9   100.5
+10  100.08
+13  99.77
+14  99.53
+"""
+
+"""
+nifty = [
+    9039.25,
+    9136.85,
+    9251.5,
+    2859.9,
+    9154.4,
+    9266.75,
+    9111.9,
+    8083.8,
+    8660.25,
+    8745.45,
+    9955.2,
+    10989.45,
+    11201.75,
+    12080.85,
+]
+
+pharma = [
+    9600.65,
+    9093,
+    9343.35,
+    9327.1,
+    9518.45,
+    9157.75,
+    8800.45,
+    7361.6,
+    6813.05,
+    6951.9,
+    7268,
+    8018.3,
+    7576.75,
+    8364.35,
+]
+pharma.reverse()
+nifty.reverse()
+
+df = pd.DataFrame(list(zip(nifty, pharma)), columns=["nifty", "pharma"])
+
+combined1 = add_price_relative(df, "nifty")
+combined1 = add_rs_ratio(combined1, ["pharma"])
+combined1 = add_roc(combined1, ["pharma"])
+combined1 = add_rm(combined1, ["pharma"])
+"""
+
+# sp200 = Symbol(yf_symbol="^AXJO", interval="1d")
+# xhj = Symbol(yf_symbol="^AXHJ", interval="1d")
+# xij = Symbol(yf_symbol="^AXIJ", interval="1d")
+# xre = Symbol(yf_symbol="^AXRE", interval="1d")
+
+gspc = Symbol(yf_symbol="^GSPC", interval="1d")
+# xly = Symbol(yf_symbol="XLY", interval="1d")
+xly = Symbol(yf_symbol="^SP500-25", interval="1d")
+
+symbols = ["xly"]
+combined = pd.DataFrame()
+combined["gspc"] = gspc.ohlc.bars.Close
+combined["xly"] = xly.ohlc.bars.Close
+
+prices_df = pd.DataFrame()
+prices_df["xly"] = xly.ohlc.bars.Close
+benchmark = gspc.ohlc.bars.Close
+z = rs_ratio(prices_df, benchmark)
+
+combined = add_price_relative(combined, "gspc")
+combined = add_rs_ratio(combined, symbols)
+combined = add_roc(combined, symbols)
+combined = add_rm(combined, symbols)
+
+"""
 symbols = ["xhj", "xij", "xre"]
-
 combined = pd.DataFrame()
 combined["asx"] = sp200.ohlc.bars.Close
 combined["xhj"] = xhj.ohlc.bars.Close
@@ -81,6 +166,7 @@ combined = add_price_relative(combined, "asx")
 combined = add_rs_ratio(combined, symbols)
 combined = add_roc(combined, symbols)
 combined = add_rm(combined, symbols)
+"""
 
 print("banan")
 
@@ -91,14 +177,14 @@ ax1 = plt.axes()
 # axis1.plot(combined.iloc[-15:-1].xhj_RS_RATIO, combined.iloc[-15:-1].xhj_RM, format="o")
 # plt.show()
 
-tail_len = 15
+tail_len = 10
 red = Color("maroon")
 blue = Color("gray")
 colours = list(red.range_to(blue, tail_len - 1))
 hex_colours = [str(x) for x in colours]
 
-x = combined.iloc[-tail_len:-1].xhj_RS_RATIO
-y = combined.iloc[-tail_len:-1].xhj_RM
+x = combined.iloc[-tail_len:-1].xly_RS_RATIO
+y = combined.iloc[-tail_len:-1].xly_RM
 labels = combined.index[-tail_len:-1]
 
 # ax1.plot(x, y, "C3", c=hex_colours, lw=1)
@@ -115,7 +201,7 @@ lc.set_linewidth(2)
 line = ax1.add_collection(lc)
 
 for i in range(0, tail_len - 1):
-    label = str(labels[i].time())
+    label = str(labels[i].date())
 
     plt.annotate(
         label,  # this is the text
@@ -125,4 +211,6 @@ for i in range(0, tail_len - 1):
         ha="center",
     )  # horizontal alignment can be left, right or center
 
+
 plt.show()
+print("banana")
