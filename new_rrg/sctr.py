@@ -202,12 +202,12 @@ if __name__ == "__main__":
         "ZS",
     ]
 
-    symbols = [
-        "ABNB",
-        "ADBE",
-        "ADI",
-        "ADP",
-    ]
+    # symbols = [
+    #    "ABNB",
+    #    "ADBE",
+    #    "ADI",
+    #    "ADP",
+    # ]
 
     # recent_sctr_df = pd.DataFrame({})
     recent_sctr_df = pd.DataFrame(columns=["datetime", "symbol", "IND_SCORE"])
@@ -224,7 +224,7 @@ if __name__ == "__main__":
     # current = this_price.index[0]
     # last = this_price.index[-1]
 
-    for this_date in this_price.index[240:]:
+    for this_date in this_price.index[200:]:
         for s, price_df in prices.items():
             #  Calculate indicators
             price_df = calculate_indicators(price_df)
@@ -281,7 +281,11 @@ if __name__ == "__main__":
         for i in sorted.index:
             df["rank"].loc[(this_date, i)] = rank
             rank += 1
-    df = df.sort_values(by="IND_SCORE", ascending=True)
+
+    # so now you can iterate through finding where there's changes
+    df["rank_diff"] = df["rank"] - df["rank"].shift(len(symbols))
+    df.loc[df["rank_diff"] > 0]
+
     # recent_sctr_df.sort_values(by="IND_SCORE", ascending=True).reset_index(
     #    inplace=True, drop=True
     # )
