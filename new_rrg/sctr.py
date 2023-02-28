@@ -265,6 +265,56 @@ if __name__ == "__main__":
             # print(f"Done {s}")
         print(f"Done {this_date}")
 
+    # create the index
+    col_index = pd.MultiIndex.from_product(
+        [symbols, ["sctr"]], names=["symbol", "sctr_col"]
+    )
+
+    # create the data frame structure
+    ndf = pd.DataFrame(index=recent_sctr_df.datetime.unique(), columns=col_index)
+
+    # populate the data frame structure - there's 100% a better way than this but whatevs
+    for s in recent_sctr_df.symbol.unique():
+        ndf.loc[:, (s, "sctr")] = (
+            recent_sctr_df["IND_SCORE"].loc[recent_sctr_df.symbol == s].tolist()
+        )
+        ndf.loc[:, (s, "close")] = prices[s].Close[ndf.index]
+
+    # used for selecting 2nd level columns
+    idx = pd.IndexSlice
+    ranks = ndf.loc[slice(None), idx[:, "sctr"]].rank(axis=1, ascending=False)
+    ranks = ranks.rename(columns={"sctr": "rank"})
+    nndf = ndf.join(ranks)
+
+    for s in recent_sctr_df.symbol.unique():
+        nndf.loc[:, (s, "held")] = False
+        nndf.loc[:, (s, "transactions")] = 0
+        a = nndf[s]["rank"].shift() > 25
+        b = nndf[s]["rank"] <= 25
+        c = a & b
+        nndf.loc[:, (s, "transactions")].loc[c.index[c]] = (
+            prices[s]["Close"][c.index[c]] * -1
+        )
+        nndf.loc[:, (s, "held")].loc[c.index[c]] = True
+
+        d = nndf[s]["rank"].shift() <= 25
+        e = nndf[s]["rank"] > 25
+        f = d & e
+        nndf.loc[:, (s, "transactions")].loc[f.index[f]] = prices[s]["Close"][
+            f.index[f]
+        ]
+
+    nndf = nndf.reindex(sorted(nndf.columns), axis=1)["ADBE"]
+
+    # prices[s]["Close"][f.index[f]]
+
+    # ndf.loc[slice(None), idx[:, 'sctr']]
+
+    #
+    #
+    #
+    recent_sctr_df["IND_SCORE"].loc[recent_sctr_df.symbol == "ABNB"].tolist()
+
     df = recent_sctr_df.set_index(["datetime", "symbol"]).sort_index()
     # df.IND_SCORE.loc[(pd.Timestamp('2023-02-23 00:00:00-0500', tz='America/New_York'), 'ADP')]
     # df.loc[(pd.Timestamp('2023-02-23 00:00:00-0500', tz='America/New_York'), slice(None))]
@@ -301,5 +351,5 @@ if __name__ == "__main__":
 date    symbol      score       rank
 1/1/1   amzn        50          99
 2/1/1   amzn        49          90
-
+ndf = pd.DataFrame(recent_sctr_df, index=recent_str_dr.datetime, columns=
 """
