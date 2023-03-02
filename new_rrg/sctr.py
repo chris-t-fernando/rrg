@@ -1,6 +1,5 @@
 import numpy as np
 import pandas as pd
-import os
 import pandas_ta as ta
 from ta.momentum import PercentagePriceOscillator
 from symbol import SymbolData
@@ -210,60 +209,72 @@ if __name__ == "__main__":
     # ]
 
     # recent_sctr_df = pd.DataFrame({})
-    recent_sctr_df = pd.DataFrame(columns=["datetime", "symbol", "IND_SCORE"])
-    price_data_dict = {}
-    first = True
-    prices = {}
-    for symbol in symbols:
-        this_price = fetch_price_data(symbol)
-        if this_price is None or len(this_price) == 0:
-            continue
-        prices[symbol] = this_price
-        print(f"Got data for {symbol}")
+    if False:
+        recent_sctr_df = pd.DataFrame(columns=["datetime", "symbol", "IND_SCORE"])
+        price_data_dict = {}
+        first = True
+        prices = {}
+        for symbol in symbols:
+            this_price = fetch_price_data(symbol)
+            if this_price is None or len(this_price) == 0:
+                continue
+            prices[symbol] = this_price
+            print(f"Got data for {symbol}")
 
-    # current = this_price.index[0]
-    # last = this_price.index[-1]
+        # current = this_price.index[0]
+        # last = this_price.index[-1]
 
-    for this_date in this_price.index[200:]:
-        for s, price_df in prices.items():
-            #  Calculate indicators
-            price_df = calculate_indicators(price_df)
-            #  Calculate weights
-            price_df = calculate_weights(price_df)
-            #  Calculate indicator score
-            price_df = calculate_sctr(price_df)
-            price_data_dict[symbol] = price_df
-            #  Store recent indicator score
-            # row = pd.DataFrame(
-            #    {"symbol": [symbol], "IND_SCORE": [price_df["IND_SCORE"].iloc[-1]]}
-            # )
-            # recent_sctr_df = pd.concat([recent_sctr_df, row], axis=0, ignore_index=True)
+        for this_date in this_price.index[200:]:
+            for s, price_df in prices.items():
+                #  Calculate indicators
+                price_df = calculate_indicators(price_df)
+                #  Calculate weights
+                price_df = calculate_weights(price_df)
+                #  Calculate indicator score
+                price_df = calculate_sctr(price_df)
+                price_data_dict[symbol] = price_df
+                #  Store recent indicator score
+                # row = pd.DataFrame(
+                #    {"symbol": [symbol], "IND_SCORE": [price_df["IND_SCORE"].iloc[-1]]}
+                # )
+                # recent_sctr_df = pd.concat([recent_sctr_df, row], axis=0, ignore_index=True)
 
-            row = pd.DataFrame(
-                {
-                    "datetime": this_date,
-                    "symbol": [s],
-                    "IND_SCORE": [price_df["IND_SCORE"].loc[this_date]],
-                    "rank": -1,
-                }
-            )
-            recent_sctr_df = pd.concat([recent_sctr_df, row], axis=0, ignore_index=True)
-            """
-            if first:
-                recent_sctr_df.loc[price_df.index[-1]] = [
-                    symbol,
-                    price_df["IND_SCORE"].iloc[-1],
-                ]
-                recent_sctr_df.index.name = "datetime"
-                recent_sctr_df = recent_sctr_df.set_index(["symbol"], append=True)
-                first = False
-            else:
-                recent_sctr_df.loc[(price_df.index[-1], symbol)] = [
-                    price_df["IND_SCORE"].iloc[-1],
-                ]
-            """
-            # print(f"Done {s}")
-        print(f"Done {this_date}")
+                row = pd.DataFrame(
+                    {
+                        "datetime": this_date,
+                        "symbol": [s],
+                        "IND_SCORE": [price_df["IND_SCORE"].loc[this_date]],
+                        "rank": -1,
+                    }
+                )
+                recent_sctr_df = pd.concat(
+                    [recent_sctr_df, row], axis=0, ignore_index=True
+                )
+                """
+                if first:
+                    recent_sctr_df.loc[price_df.index[-1]] = [
+                        symbol,
+                        price_df["IND_SCORE"].iloc[-1],
+                    ]
+                    recent_sctr_df.index.name = "datetime"
+                    recent_sctr_df = recent_sctr_df.set_index(["symbol"], append=True)
+                    first = False
+                else:
+                    recent_sctr_df.loc[(price_df.index[-1], symbol)] = [
+                        price_df["IND_SCORE"].iloc[-1],
+                    ]
+                """
+                # print(f"Done {s}")
+            print(f"Done {this_date}")
+    else:
+        prices = {}
+        for symbol in symbols:
+            this_price = fetch_price_data(symbol)
+            if this_price is None or len(this_price) == 0:
+                continue
+            prices[symbol] = this_price
+            print(f"Got data for {symbol}")
+        recent_sctr_df = pd.read_csv("recent_sctr_df.csv", index_col=0)
 
     # create the index
     col_index = pd.MultiIndex.from_product(
@@ -285,10 +296,12 @@ if __name__ == "__main__":
     ranks = ndf.loc[slice(None), idx[:, "sctr"]].rank(axis=1, ascending=False)
     ranks = ranks.rename(columns={"sctr": "rank"})
     nndf = ndf.join(ranks)
-
+    """
     for s in recent_sctr_df.symbol.unique():
         nndf.loc[:, (s, "held")] = False
         nndf.loc[:, (s, "transactions")] = 0
+
+        # buy in conditions
         a = nndf[s]["rank"].shift() > 25
         b = nndf[s]["rank"] <= 25
         c = a & b
@@ -297,14 +310,98 @@ if __name__ == "__main__":
         )
         nndf.loc[:, (s, "held")].loc[c.index[c]] = True
 
-        d = nndf[s]["rank"].shift() <= 25
-        e = nndf[s]["rank"] > 25
-        f = d & e
-        nndf.loc[:, (s, "transactions")].loc[f.index[f]] = prices[s]["Close"][
-            f.index[f]
-        ]
+        # sell out conditions
+        # d = nndf[s]["rank"].shift() <= 25
+        # e = nndf[s]["rank"] > 25
+        # f = nndf[s]["close"].loc[c.index[c]]
+        # g = d & e & f
+        # nndf.loc[:, (s, "transactions")].loc[g.index[g]] = prices[s]["Close"][
+        #    g.index[g]
+        # ]
+"""
+    nndf = nndf.reindex(sorted(nndf.columns), axis=1)
 
-    nndf = nndf.reindex(sorted(nndf.columns), axis=1)["ADBE"]
+    """
+             itm
+        yes      no
+              |
+    yes  hodl |  hodl - bad day for everyone
+              |
+top25   --------------
+              |
+    no  sell  |  sell hard
+              |      
+    """
+    import math
+
+    top_quarter = math.floor(len(symbols) / 4)
+
+    for s in recent_sctr_df.symbol.unique():
+        nndf.loc[:, (s, "action")] = None
+        nndf.loc[:, (s, "held")] = False
+        nndf.loc[:, (s, "buy_in_cost")] = None
+        nndf.loc[:, (s, "balance")] = 0
+        for i, row in nndf[s].iterrows():
+            row_index_pos = nndf.index.get_loc(row.name)
+            prev_row_index = nndf.iloc[row_index_pos - 1].name
+            prev_row = nndf[s].loc[prev_row_index]
+
+            this_close = row.close
+            last_close = prev_row.close
+
+            this_top_25 = row["rank"] <= top_quarter
+            last_top_25 = prev_row["rank"] <= top_quarter
+
+            if prev_row["held"]:
+                itm = this_close > prev_row["buy_in_cost"]
+                take_profit = this_close > prev_row["buy_in_cost"] * 1.1
+                if take_profit:
+                    nndf.at[i, (s, "action")] = "sell - 5% profit"
+                    nndf.at[i, (s, "balance")] = (
+                        prev_row["balance"] + this_close - prev_row["buy_in_cost"]
+                    )
+                elif this_top_25 and itm:
+                    # do nothing
+                    nndf.at[i, (s, "action")] = "hodl - itm and ranked"
+                    nndf.at[i, (s, "held")] = True
+                    nndf.at[i, (s, "buy_in_cost")] = prev_row["buy_in_cost"]
+                    nndf.at[i, (s, "balance")] = prev_row["balance"]
+                elif this_top_25 and not itm:
+                    # bad day for everyone
+                    nndf.at[i, (s, "action")] = "hodl - just a bad day"
+                    nndf.at[i, (s, "held")] = True
+                    nndf.at[i, (s, "buy_in_cost")] = prev_row["buy_in_cost"]
+                    nndf.at[i, (s, "balance")] = prev_row["balance"]
+                elif not this_top_25 and itm:
+                    # take the money and run
+                    nndf.at[i, (s, "action")] = "sell - take profit"
+                    nndf.at[i, (s, "balance")] = (
+                        prev_row["balance"] + this_close - prev_row["buy_in_cost"]
+                    )
+                elif not this_top_25 and not itm:
+                    # dog stock, bail out
+                    nndf.at[i, (s, "action")] = "sell - stop loss"
+                    nndf.at[i, (s, "balance")] = (
+                        prev_row["balance"] + this_close - prev_row["buy_in_cost"]
+                    )
+            else:
+                # determine if we want to buy in
+                if this_top_25:
+                    nndf.at[i, (s, "action")] = "buy in"
+                    nndf.at[i, (s, "held")] = True
+                    nndf.at[i, (s, "buy_in_cost")] = this_close
+                nndf.at[i, (s, "balance")] = prev_row["balance"]
+
+            # print(f"\tFinished backtesting {row.name}")
+        print(f"Finished backtesting {s}")
+
+    nndf = nndf.reindex(sorted(nndf.columns), axis=1)
+
+    # nndf.loc[:, (slice(None), "balance")].tail(1).sum().rank()
+    nndf.loc[:, (slice(None), "balance")].tail(1).sum().sum()
+    nndf.loc[:, (slice(None), "balance")].tail(1).sum()
+
+    print("a")
 
     # prices[s]["Close"][f.index[f]]
 
@@ -313,6 +410,7 @@ if __name__ == "__main__":
     #
     #
     #
+
     recent_sctr_df["IND_SCORE"].loc[recent_sctr_df.symbol == "ABNB"].tolist()
 
     df = recent_sctr_df.set_index(["datetime", "symbol"]).sort_index()
